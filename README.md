@@ -174,9 +174,7 @@ server.NewServer(scheduler gocron.Scheduler, port int, opts ...ServerOption) *Se
 **Parameters:**
 - `scheduler` - Your configured gocron scheduler instance
 - `port` - HTTP port to listen on
-- `opts` - Optional configuration settings
-
-### Configuration Options
+- `opts` - Optional configuration settings (available configuration Options are listed [here](https://pkg.go.dev/github.com/go-co-op/gocron-ui@v0.1.0/server#Option))
 
 #### Custom Title
 
