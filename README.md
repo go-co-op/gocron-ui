@@ -118,10 +118,10 @@ Connect to `ws://localhost:8080/ws` for real-time job updates.
 
 ### Comprehensive Example
 
-A full-featured example demonstrating 14 different job types is available in the [exmaples](./exmaples/) directory:
+A full-featured example demonstrating 14 different job types is available in the [examples](./examples/) directory:
 
 ```bash
-cd exmaples
+cd examples
 go run main.go
 ```
 
