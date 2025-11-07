@@ -118,10 +118,10 @@ Connect to `ws://localhost:8080/ws` for real-time job updates.
 
 ### Comprehensive Example
 
-A full-featured example demonstrating 14 different job types is available in the [exmaples](./exmaples/) directory:
+A full-featured example demonstrating 14 different job types is available in the [examples](./examples/) directory:
 
 ```bash
-cd exmaples
+cd examples
 go run main.go
 ```
 
@@ -174,9 +174,7 @@ server.NewServer(scheduler gocron.Scheduler, port int, opts ...ServerOption) *Se
 **Parameters:**
 - `scheduler` - Your configured gocron scheduler instance
 - `port` - HTTP port to listen on
-- `opts` - Optional configuration settings
-
-### Configuration Options
+- `opts` - Optional configuration settings (available configuration Options are listed [here](https://pkg.go.dev/github.com/go-co-op/gocron-ui@v0.1.0/server#Option))
 
 #### Custom Title
 
