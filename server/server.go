@@ -33,7 +33,17 @@ type Server struct {
 
 // Config is the server configuration in which user can set the title of the UI
 type Config struct {
-	Title string `json:"title"`
+	Title            string `json:"title"`
+	APIEnabled       bool   `json:"api_enabled"`
+	WebSocketEnabled bool   `json:"websocket_enabled"`
+}
+
+func defaultConfig() Config {
+	return Config{
+		Title:            "GoCron UI",
+		APIEnabled:       true,
+		WebSocketEnabled: true,
+	}
 }
 
 // NewServer creates a new server instance
@@ -46,9 +56,7 @@ func NewServer(scheduler gocron.Scheduler, _ int, opts ...Option) *Server {
 				return true // allow all origins for development
 			},
 		},
-		config: Config{
-			Title: "GoCron UI", // default title
-		},
+		config: defaultConfig(),
 	}
 
 	// apply options
@@ -58,19 +66,23 @@ func NewServer(scheduler gocron.Scheduler, _ int, opts ...Option) *Server {
 
 	router := mux.NewRouter()
 
-	// api routes
-	api := router.PathPrefix("/api").Subrouter()
-	api.HandleFunc("/config", s.GetConfig).Methods("GET")
-	api.HandleFunc("/jobs", s.GetJobs).Methods("GET")
-	api.HandleFunc("/jobs", s.CreateJob).Methods("POST")
-	api.HandleFunc("/jobs/{id}", s.GetJob).Methods("GET")
-	api.HandleFunc("/jobs/{id}", s.DeleteJob).Methods("DELETE")
-	api.HandleFunc("/jobs/{id}/run", s.RunJob).Methods("POST")
-	api.HandleFunc("/scheduler/stop", s.StopScheduler).Methods("POST")
-	api.HandleFunc("/scheduler/start", s.StartScheduler).Methods("POST")
+	if s.config.APIEnabled {
+		// api routes
+		api := router.PathPrefix("/api").Subrouter()
+		api.HandleFunc("/config", s.GetConfig).Methods("GET")
+		api.HandleFunc("/jobs", s.GetJobs).Methods("GET")
+		api.HandleFunc("/jobs", s.CreateJob).Methods("POST")
+		api.HandleFunc("/jobs/{id}", s.GetJob).Methods("GET")
+		api.HandleFunc("/jobs/{id}", s.DeleteJob).Methods("DELETE")
+		api.HandleFunc("/jobs/{id}/run", s.RunJob).Methods("POST")
+		api.HandleFunc("/scheduler/stop", s.StopScheduler).Methods("POST")
+		api.HandleFunc("/scheduler/start", s.StartScheduler).Methods("POST")
+	}
 
-	// webSocket route
-	router.HandleFunc("/ws", s.HandleWebSocket)
+	if s.config.WebSocketEnabled {
+		// webSocket route
+		router.HandleFunc("/ws", s.HandleWebSocket)
+	}
 
 	// serve embedded static files (frontend)
 	staticFS, err := fs.Sub(staticFiles, "static")
@@ -102,6 +114,20 @@ type Option func(*Server)
 func WithTitle(title string) Option {
 	return func(s *Server) {
 		s.config.Title = title
+	}
+}
+
+// WithAPIDisabled disables API
+func WithAPIDisabled() Option {
+	return func(s *Server) {
+		s.config.APIEnabled = false
+	}
+}
+
+// WithWebSocketDisabled disables webSocket
+func WithWebSocketDisabled() Option {
+	return func(s *Server) {
+		s.config.WebSocketEnabled = false
 	}
 }
 
