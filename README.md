@@ -121,7 +121,7 @@ Connect to `ws://localhost:8080/ws` for real-time job updates.
 A full-featured example demonstrating 14 different job types is available in the [examples](./examples/) directory:
 
 ```bash
-cd examples
+cd examples/getting_started
 go run main.go
 ```
 
@@ -139,6 +139,9 @@ go run main.go
 - Health check monitoring
 
 Visit `http://localhost:8080` to see the UI in action.
+
+### Basic Auth
+See the [basic_auth](./examples/basic_auth) example for how to secure GoCron-UI using a simple basic auth middleware with the credentials being sourced via environment variables.
 
 ## Deployment
 
