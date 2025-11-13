@@ -6,7 +6,8 @@ let expandedSchedules = new Set(); // Track which job schedules are expanded
 
 // API Base URL
 const API_BASE = window.location.origin + '/api';
-const WS_URL = `ws://${window.location.host}/ws`;
+const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const WS_URL = `${WS_PROTOCOL}//${window.location.host}/ws`;
 
 // initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
