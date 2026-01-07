@@ -4,10 +4,20 @@ let ws = null;
 let isConnected = false;
 let expandedSchedules = new Set(); // Track which job schedules are expanded
 
-// API Base URL
-const API_BASE = window.location.origin + '/api';
-const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-const WS_URL = `${WS_PROTOCOL}//${window.location.host}/ws`;
+// API Base URL - use relative path so browser automatically resolves prefix
+function getApiBase() {
+    // Use relative path - browser resolves relative to current page URL
+    // If page is at /prefix/index.html, './api' becomes /prefix/api
+    return './api';
+}
+
+function getWebSocketUrl() {
+    // Construct WebSocket URL from current location
+    // This automatically includes any prefix from the page URL
+    const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const path = window.location.pathname.replace(/\/[^/]*$/, '') || '';
+    return `${WS_PROTOCOL}//${window.location.host}${path}/ws`;
+}
 
 // initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
@@ -18,7 +28,9 @@ document.addEventListener('DOMContentLoaded', () => {
 // load server configuration
 async function loadConfig() {
     try {
-        const response = await fetch(`${API_BASE}/config`);
+        // Fetch config using relative path (automatically includes prefix from current URL)
+        const response = await fetch(`${getApiBase()}/config`);
+        
         if (response.ok) {
             const config = await response.json();
             if (config.title) {
@@ -46,7 +58,7 @@ async function loadConfig() {
 
 // webSocket connection
 function connectWebSocket() {
-    ws = new WebSocket(WS_URL);
+    ws = new WebSocket(getWebSocketUrl());
 
     ws.onopen = () => {
         console.log('WebSocket connected');
@@ -106,7 +118,7 @@ function hideError() {
 
 // API Functions
 async function deleteJob(id) {
-    const response = await fetch(`${API_BASE}/jobs/${id}`, {
+    const response = await fetch(`${getApiBase()}/jobs/${id}`, {
         method: 'DELETE',
     });
 
@@ -116,7 +128,7 @@ async function deleteJob(id) {
 }
 
 async function runJob(id) {
-    const response = await fetch(`${API_BASE}/jobs/${id}/run`, {
+    const response = await fetch(`${getApiBase()}/jobs/${id}/run`, {
         method: 'POST',
     });
 
