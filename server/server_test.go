@@ -14,6 +14,7 @@ import (
 func TestServerWithGorillaDefaults(t *testing.T) {
 	t.Run("get index page", func(t *testing.T) {
 		res := sendGetRequest(t, "/", "")
+		defer res.Body.Close()
 
 		expectStatusCode(t, res, http.StatusOK)
 		expectHeader(t, res, "Content-Type", "text/html; charset=utf-8")
@@ -21,6 +22,7 @@ func TestServerWithGorillaDefaults(t *testing.T) {
 
 	t.Run("get api config", func(t *testing.T) {
 		res := sendGetRequest(t, "/api/config", "")
+		defer res.Body.Close()
 
 		expectStatusCode(t, res, http.StatusOK)
 		expectHeader(t, res, "Content-Type", "application/json")
@@ -31,6 +33,7 @@ func TestServerWithGorillaDefaults(t *testing.T) {
 func TestServerWithGorillaDefaultsBehindHTTPDefaultMux(t *testing.T) {
 	t.Run("get index page", func(t *testing.T) {
 		res := sendGetRequest(t, "/", "/")
+		defer res.Body.Close()
 
 		expectStatusCode(t, res, http.StatusOK)
 		expectHeader(t, res, "Content-Type", "text/html; charset=utf-8")
@@ -38,6 +41,7 @@ func TestServerWithGorillaDefaultsBehindHTTPDefaultMux(t *testing.T) {
 
 	t.Run("get api config", func(t *testing.T) {
 		res := sendGetRequest(t, "/api/config", "/")
+		defer res.Body.Close()
 
 		expectStatusCode(t, res, http.StatusOK)
 		expectHeader(t, res, "Content-Type", "application/json")
@@ -48,6 +52,7 @@ func TestServerWithGorillaDefaultsBehindHTTPDefaultMux(t *testing.T) {
 func TestServerBehindPathMux(t *testing.T) {
 	t.Run("get index page", func(t *testing.T) {
 		res := sendGetRequest(t, "/admin/", "/admin/", server.WithBasePath("/admin/"))
+		defer res.Body.Close()
 
 		expectStatusCode(t, res, http.StatusOK)
 		expectHeader(t, res, "Content-Type", "text/html; charset=utf-8")
@@ -55,14 +60,13 @@ func TestServerBehindPathMux(t *testing.T) {
 
 	t.Run("get api config", func(t *testing.T) {
 		res := sendGetRequest(t, "/admin/api/config", "/admin/", server.WithBasePath("/admin/"))
+		defer res.Body.Close()
 
 		expectStatusCode(t, res, http.StatusOK)
 		expectHeader(t, res, "Content-Type", "application/json")
 		expectBody(t, res, `{"title":"GoCron UI","api_enabled":true,"websocket_enabled":true}`)
 	})
 }
-
-// normal usage using gorilla
 
 func sendGetRequest(t *testing.T, reqPath, muxPath string, opts ...server.Option) *http.Response {
 	t.Helper()
