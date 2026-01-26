@@ -10,6 +10,7 @@ type JobData struct {
 	NextRuns       []string `json:"nextRuns"`
 	Schedule       string   `json:"schedule"`       // human-readable schedule description
 	ScheduleDetail string   `json:"scheduleDetail"` // technical schedule details (cron expression, interval, etc.)
+	SchedulerName  string   `json:"schedulerName"`
 }
 
 // CreateJobRequest represents the request to create a new job

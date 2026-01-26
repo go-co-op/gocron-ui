@@ -21,14 +21,15 @@ import (
 //go:embed static/*
 var staticFiles embed.FS
 
-// Server is the main server struct which contains the scheduler, router, webSocket clients, webSocket mutex, upgrader, and config
+// Server is the main server struct which contains the schedulers, router, webSocket clients, webSocket mutex, upgrader, and config
 type Server struct {
-	Scheduler gocron.Scheduler
-	Router    http.Handler
-	wsClients map[*websocket.Conn]bool
-	wsMutex   sync.RWMutex
-	upgrader  websocket.Upgrader
-	config    Config
+	Schedulers     []gocron.Scheduler
+	SchedulerNames []string
+	Router         http.Handler
+	wsClients      map[*websocket.Conn]bool
+	wsMutex        sync.RWMutex
+	upgrader       websocket.Upgrader
+	config         Config
 }
 
 // Config is the server configuration in which user can set the title of the UI
@@ -49,8 +50,9 @@ func defaultConfig() Config {
 // NewServer creates a new server instance
 func NewServer(scheduler gocron.Scheduler, _ int, opts ...Option) *Server {
 	s := &Server{
-		Scheduler: scheduler,
-		wsClients: make(map[*websocket.Conn]bool),
+		Schedulers:     []gocron.Scheduler{scheduler},
+		SchedulerNames: []string{"Default"},
+		wsClients:      make(map[*websocket.Conn]bool),
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(_ *http.Request) bool {
 				return true // allow all origins for development
@@ -128,6 +130,14 @@ func WithAPIDisabled() Option {
 func WithWebSocketDisabled() Option {
 	return func(s *Server) {
 		s.config.WebSocketEnabled = false
+	}
+}
+
+// WithAdditionalScheduler adds an additional scheduler to the server
+func WithAdditionalScheduler(name string, scheduler gocron.Scheduler) Option {
+	return func(s *Server) {
+		s.Schedulers = append(s.Schedulers, scheduler)
+		s.SchedulerNames = append(s.SchedulerNames, name)
 	}
 }
 
@@ -226,12 +236,14 @@ func (s *Server) GetJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jobs := s.Scheduler.Jobs()
-	for _, job := range jobs {
-		if job.ID() == id {
-			jobData := s.convertJobToData(job)
-			respondJSON(w, http.StatusOK, jobData)
-			return
+	for i, scheduler := range s.Schedulers {
+		jobs := scheduler.Jobs()
+		for _, job := range jobs {
+			if job.ID() == id {
+				jobData := s.convertJobToData(job, s.SchedulerNames[i])
+				respondJSON(w, http.StatusOK, jobData)
+				return
+			}
 		}
 	}
 
@@ -304,14 +316,14 @@ func (s *Server) CreateJob(w http.ResponseWriter, r *http.Request) {
 		options = append(options, gocron.WithTags(req.Tags...))
 	}
 
-	// add job to scheduler
-	job, err := s.Scheduler.NewJob(jobDef, task, options...)
+	// add job to scheduler (default to the first one)
+	job, err := s.Schedulers[0].NewJob(jobDef, task, options...)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	jobData := s.convertJobToData(job)
+	jobData := s.convertJobToData(job, s.SchedulerNames[0])
 	respondJSON(w, http.StatusCreated, jobData)
 }
 
@@ -326,12 +338,14 @@ func (s *Server) DeleteJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.Scheduler.RemoveJob(id); err != nil { // remove job from scheduler using the job ID & RemoveJob is a method of the Scheduler interface
-		respondError(w, http.StatusNotFound, "Job not found")
-		return
+	for _, scheduler := range s.Schedulers {
+		if err := scheduler.RemoveJob(id); err == nil {
+			respondJSON(w, http.StatusOK, map[string]string{"message": "Job deleted successfully"})
+			return
+		}
 	}
 
-	respondJSON(w, http.StatusOK, map[string]string{"message": "Job deleted successfully"})
+	respondError(w, http.StatusNotFound, "Job not found")
 }
 
 // RunJob runs a job immediately
@@ -345,47 +359,55 @@ func (s *Server) RunJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jobs := s.Scheduler.Jobs()
-	for _, job := range jobs {
-		if job.ID() == id {
-			if err := job.RunNow(); err != nil {
-				respondError(w, http.StatusInternalServerError, err.Error())
+	for _, scheduler := range s.Schedulers {
+		jobs := scheduler.Jobs()
+		for _, job := range jobs {
+			if job.ID() == id {
+				if err := job.RunNow(); err != nil {
+					respondError(w, http.StatusInternalServerError, err.Error())
+					return
+				}
+				respondJSON(w, http.StatusOK, map[string]string{"message": "Job executed"})
 				return
 			}
-			respondJSON(w, http.StatusOK, map[string]string{"message": "Job executed"})
-			return
 		}
 	}
 
 	respondError(w, http.StatusNotFound, "Job not found")
 }
 
-// StopScheduler stops the scheduler
+// StopScheduler stops all schedulers
 func (s *Server) StopScheduler(w http.ResponseWriter, _ *http.Request) {
-	if err := s.Scheduler.StopJobs(); err != nil {
-		respondError(w, http.StatusInternalServerError, err.Error())
-		return
+	for _, scheduler := range s.Schedulers {
+		if err := scheduler.StopJobs(); err != nil {
+			respondError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
 	}
-	respondJSON(w, http.StatusOK, map[string]string{"message": "Scheduler stopped"})
+	respondJSON(w, http.StatusOK, map[string]string{"message": "Schedulers stopped"})
 }
 
-// StartScheduler starts the scheduler
+// StartScheduler starts all schedulers
 func (s *Server) StartScheduler(w http.ResponseWriter, _ *http.Request) {
-	s.Scheduler.Start()
-	respondJSON(w, http.StatusOK, map[string]string{"message": "Scheduler started"})
+	for _, scheduler := range s.Schedulers {
+		scheduler.Start()
+	}
+	respondJSON(w, http.StatusOK, map[string]string{"message": "Schedulers started"})
 }
 
 // helper functions
 func (s *Server) getJobsData() []JobData {
-	jobs := s.Scheduler.Jobs()
-	result := make([]JobData, 0, len(jobs))
-	for _, job := range jobs {
-		result = append(result, s.convertJobToData(job))
+	var result []JobData
+	for i, scheduler := range s.Schedulers {
+		jobs := scheduler.Jobs()
+		for _, job := range jobs {
+			result = append(result, s.convertJobToData(job, s.SchedulerNames[i]))
+		}
 	}
 	return result
 }
 
-func (s *Server) convertJobToData(job gocron.Job) JobData {
+func (s *Server) convertJobToData(job gocron.Job, schedulerName string) JobData {
 	nextRun, _ := job.NextRun()
 	lastRun, _ := job.LastRun()
 
@@ -404,6 +426,7 @@ func (s *Server) convertJobToData(job gocron.Job) JobData {
 		NextRuns:       formatTimes(nextRuns),
 		Schedule:       schedule,
 		ScheduleDetail: scheduleDetail,
+		SchedulerName:  schedulerName,
 	}
 }
 
