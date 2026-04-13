@@ -30,7 +30,7 @@ type Server struct {
 	wsMutex        sync.RWMutex
 	upgrader       websocket.Upgrader
 	config         Config
-  basePath  string
+	basePath       string
 }
 
 // Config is the server configuration in which user can set the title of the UI
@@ -145,7 +145,7 @@ func WithAdditionalScheduler(name string, scheduler gocron.Scheduler) Option {
 	return func(s *Server) {
 		s.Schedulers = append(s.Schedulers, scheduler)
 		s.SchedulerNames = append(s.SchedulerNames, name)
-  }
+	}
 }
 
 // WithBasePath sets a base path for the server
