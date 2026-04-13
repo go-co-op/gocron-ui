@@ -1,6 +1,6 @@
 module github.com/go-co-op/gocron-ui
 
-go 1.24.0
+go 1.26.0
 
 require (
 	github.com/go-co-op/gocron/v2 v2.19.0
