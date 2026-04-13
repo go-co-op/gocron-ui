@@ -29,6 +29,7 @@ type Server struct {
 	wsMutex   sync.RWMutex
 	upgrader  websocket.Upgrader
 	config    Config
+	basePath  string
 }
 
 // Config is the server configuration in which user can set the title of the UI
@@ -56,7 +57,8 @@ func NewServer(scheduler gocron.Scheduler, _ int, opts ...Option) *Server {
 				return true // allow all origins for development
 			},
 		},
-		config: defaultConfig(),
+		config:   defaultConfig(),
+		basePath: "/",
 	}
 
 	// apply options
@@ -65,6 +67,9 @@ func NewServer(scheduler gocron.Scheduler, _ int, opts ...Option) *Server {
 	}
 
 	router := mux.NewRouter()
+	if s.basePath != "/" {
+		router = router.PathPrefix(s.basePath).Subrouter()
+	}
 
 	if s.config.APIEnabled {
 		// api routes
@@ -89,7 +94,9 @@ func NewServer(scheduler gocron.Scheduler, _ int, opts ...Option) *Server {
 	if err != nil {
 		log.Fatalf("Failed to load static files: %v", err)
 	}
-	router.PathPrefix("/").Handler(http.FileServer(http.FS(staticFS)))
+
+	handler := http.FileServer(http.FS(staticFS))
+	router.PathPrefix("/").Handler(http.StripPrefix(s.basePath, handler))
 
 	// setup CORS
 	c := cors.New(cors.Options{
@@ -128,6 +135,16 @@ func WithAPIDisabled() Option {
 func WithWebSocketDisabled() Option {
 	return func(s *Server) {
 		s.config.WebSocketEnabled = false
+	}
+}
+
+// WithBasePath sets a base path for the server
+func WithBasePath(path string) Option {
+	return func(s *Server) {
+		s.basePath = strings.TrimRight(path, "/")
+		if s.basePath == "" {
+			s.basePath = "/"
+		}
 	}
 }
 

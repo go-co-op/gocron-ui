@@ -81,15 +81,15 @@ Open your browser to `http://localhost:8080` to view the dashboard.
 
 ### REST Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/config` | Get server configuration |
-| `GET` | `/api/jobs` | List all jobs |
-| `GET` | `/api/jobs/{id}` | Get job details |
-| `POST` | `/api/jobs/{id}/run` | Execute job immediately |
-| `DELETE` | `/api/jobs/{id}` | Remove job from scheduler |
-| `POST` | `/api/scheduler/start` | Start the scheduler |
-| `POST` | `/api/scheduler/stop` | Stop the scheduler |
+| Method   | Endpoint               | Description               |
+| -------- | ---------------------- | ------------------------- |
+| `GET`    | `/api/config`          | Get server configuration  |
+| `GET`    | `/api/jobs`            | List all jobs             |
+| `GET`    | `/api/jobs/{id}`       | Get job details           |
+| `POST`   | `/api/jobs/{id}/run`   | Execute job immediately   |
+| `DELETE` | `/api/jobs/{id}`       | Remove job from scheduler |
+| `POST`   | `/api/scheduler/start` | Start the scheduler       |
+| `POST`   | `/api/scheduler/stop`  | Stop the scheduler        |
 
 ### WebSocket
 
@@ -141,7 +141,12 @@ go run main.go
 Visit `http://localhost:8080` to see the UI in action.
 
 ### Basic Auth
+
 See the [basic_auth](./examples/basic_auth) example for how to secure GoCron-UI using a simple basic auth middleware with the credentials being sourced via environment variables.
+
+### Custom base path
+
+See the [base_path](./examples/base_path) example for how to serve GoCron-UI behind a custom base path (e.g., `/admin/cron/`).
 
 ## Deployment
 
