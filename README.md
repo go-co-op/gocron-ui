@@ -70,6 +70,7 @@ Open your browser to `http://localhost:8080` to view the dashboard.
 ## Features
 
 - **Real-time Monitoring** - WebSocket-based live job status updates
+- **Multi-Scheduler Support** - Monitor and control multiple scheduler instances in a single UI
 - **Job Control** - Trigger jobs manually or remove them from the scheduler
 - **Schedule Preview** - View upcoming executions for each job
 - **Tagging System** - Organize and filter jobs by tags
@@ -108,7 +109,8 @@ Connect to `ws://localhost:8080/ws` for real-time job updates.
       "lastRun": "2025-10-07T15:29:50Z",
       "nextRuns": ["...", "..."],
       "schedule": "Every 10 seconds",
-      "scheduleDetail": "Duration: 10s"
+      "scheduleDetail": "Duration: 10s",
+      "schedulerName": "Default"
     }
   ]
 }
@@ -193,6 +195,26 @@ srv := server.NewServer(scheduler, 8080, server.WithTitle("My Custom Scheduler")
 ```
 
 This will update both the browser tab title and the header title in the UI. When using a custom title, the UI automatically displays a subtle "powered by gocron-ui" attribution below the title.
+
+#### Multi-Scheduler Support
+
+You can register additional schedulers using the `WithAdditionalScheduler` option:
+
+```go
+s1, _ := gocron.NewScheduler()
+s2, _ := gocron.NewScheduler()
+
+// ... add jobs ...
+
+srv := server.NewServer(
+    s1, 
+    8080, 
+    server.WithTitle("Multi-Scheduler Dashboard"),
+    server.WithAdditionalScheduler("Background Tasks", s2),
+)
+```
+
+This allows you to monitor and control jobs from multiple schedulers in the same interface. Each job in the UI will display a badge indicating which scheduler it belongs to.
 
 #### Command-line Example
 

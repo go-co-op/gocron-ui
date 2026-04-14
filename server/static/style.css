@@ -533,6 +533,18 @@ body {
     font-size: 1rem;
 }
 
+.scheduler-badge {
+    background: #e9ecef;
+    color: #495057;
+    padding: 0.25rem 0.65rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #dee2e6;
+}
+
 .schedule-detail {
     font-size: 0.75rem;
     color: #666;

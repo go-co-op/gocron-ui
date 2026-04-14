@@ -251,6 +251,13 @@ function renderJobCard(job) {
                 </div>
             ` : ''}
 
+            <div class="job-info-item" style="margin-bottom: 1rem;">
+                <span class="job-info-label">Scheduler:</span>
+                <span class="job-info-value">
+                    <span class="scheduler-badge">${escapeHtml(job.schedulerName || 'Default')}</span>
+                </span>
+            </div>
+
             <div class="job-info">
                 <div class="job-info-item">
                     <span class="job-info-label">Next Run:</span>

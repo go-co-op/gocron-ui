@@ -130,25 +130,44 @@ func main() {
 	title := flag.String("title", "GoCron Scheduler", "Custom title for the UI")
 	flag.Parse()
 
-	// create the gocron scheduler
-	scheduler, err := gocron.NewScheduler()
+	// create the gocron schedulers
+	s1, err := gocron.NewScheduler()
 	if err != nil {
-		log.Fatalf("Failed to create scheduler: %v", err)
+		log.Fatalf("Failed to create scheduler 1: %v", err)
+	}
+	s2, err := gocron.NewScheduler()
+	if err != nil {
+		log.Fatalf("Failed to create scheduler 2: %v", err)
 	}
 
-	// add jobs to the scheduler
-	for _, job := range jobs {
-		if _, err := scheduler.NewJob(job.definition, job.task, job.options...); err != nil {
-			log.Printf("Error creating job: %v", err)
+	// add regular jobs to s1
+	for i := 0; i < 5; i++ {
+		job := jobs[i]
+		if _, err := s1.NewJob(job.definition, job.task, job.options...); err != nil {
+			log.Printf("Error creating job in s1: %v", err)
 		}
 	}
 
-	// start the scheduler
-	scheduler.Start()
-	log.Println("Scheduler started with", len(scheduler.Jobs()), "jobs")
+	// add remaining jobs to s2
+	for i := 5; i < len(jobs); i++ {
+		job := jobs[i]
+		if _, err := s2.NewJob(job.definition, job.task, job.options...); err != nil {
+			log.Printf("Error creating job in s2: %v", err)
+		}
+	}
 
-	// create and start the API server with custom title
-	srv := server.NewServer(scheduler, *port, server.WithTitle(*title))
+	// start the schedulers
+	s1.Start()
+	s2.Start()
+	log.Println("Schedulers started")
+
+	// create and start the API server with custom title and additional scheduler
+	srv := server.NewServer(
+		s1,
+		*port,
+		server.WithTitle(*title),
+		server.WithAdditionalScheduler("Background Tasks", s2),
+	)
 
 	// start server in a goroutine
 	go func() {
@@ -159,7 +178,7 @@ func main() {
 		log.Printf("Web UI:       http://localhost%s", addr)
 		log.Printf("API:          http://localhost%s/api", addr)
 		log.Printf("WebSocket:    ws://localhost%s/ws", addr)
-		log.Printf("Total Jobs:   %d", len(scheduler.Jobs()))
+		log.Printf("Total Jobs:   %d", len(s1.Jobs())+len(s2.Jobs()))
 		log.Println(strings.Repeat("=", 70) + "\n")
 
 		if err := http.ListenAndServe(addr, srv.Router); err != nil {
@@ -174,9 +193,12 @@ func main() {
 
 	log.Println("\nShutting down server...")
 
-	// shutdown scheduler
-	if err := scheduler.Shutdown(); err != nil {
-		log.Printf("Error shutting down scheduler: %v", err)
+	// shutdown schedulers
+	if err := s1.Shutdown(); err != nil {
+		log.Printf("Error shutting down scheduler 1: %v", err)
+	}
+	if err := s2.Shutdown(); err != nil {
+		log.Printf("Error shutting down scheduler 2: %v", err)
 	}
 
 	log.Println("Server stopped gracefully")
