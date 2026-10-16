@@ -426,7 +426,7 @@ func (s *Server) getJobsData() []JobData {
 
 func (s *Server) convertJobToData(job gocron.Job, schedulerName string) JobData {
 	nextRun, _ := job.NextRun()
-	lastRun, _ := job.LastRun()
+	lastRun, _ := job.LastRunStartedAt()
 
 	// get next 5 runs
 	nextRuns, _ := job.NextRuns(5)
